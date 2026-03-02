@@ -49,7 +49,18 @@ const storageConfig = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storageConfig });
+const upload = multer({ 
+  storage: storageConfig,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [".pdf", ".jpg", ".jpeg", ".png"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Only PDF and Images are allowed."));
+    }
+  }
+});
 
 // Middleware for JWT auth
 function authenticateToken(req: Request, res: Response, next: NextFunction) {

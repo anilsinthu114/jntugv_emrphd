@@ -8,7 +8,7 @@ import { UploadCloud, CheckCircle2, Loader2, CreditCard } from "lucide-react";
 import { motion } from "framer-motion";
 
 const registerFormSchema = z.object({
-  // Section A
+  // Personal Details
   name: z.string().min(2, "Full name is required").max(100),
   email: z.string().email("Valid email is required").max(150),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -16,7 +16,7 @@ const registerFormSchema = z.object({
   category: z.enum(["BC", "SC", "ST", "OC"]),
   phone: z.string().min(10, "Valid phone number required").max(20),
 
-  // Section C
+  // Employment Details
   organization: z.string().min(2, "Organization name is required").max(200),
   experience: z.coerce.number().min(5, "Minimum 5 years of experience required"),
   organizationType: z.enum(["Private", "Govt", "PSU"]),
@@ -24,12 +24,12 @@ const registerFormSchema = z.object({
   annualTurnover2425: z.string().min(1, "Turnover is required"),
   numEmployeesTech: z.coerce.number().min(0),
 
-  // Section D
+  // Research Proposal
   researchPlan: z.string().min(500, "Research plan must be at least 500 words"),
   preliminaryStudyEvidence: z.string().min(1, "Preliminary study details required"),
   researchFacilities: z.string().min(1, "Research facilities details required"),
 
-  // Section B & E Files
+  // Files
   sscCertificate: z.any().refine((f) => f?.length === 1, "Required"),
   ugCertificate: z.any().refine((f) => f?.length === 1, "Required"),
   pgCertificate: z.any().refine((f) => f?.length === 1, "Required"),
@@ -71,7 +71,7 @@ export default function Register() {
       <div className={`relative border-2 border-dashed ${fileStates[field] ? 'border-green-500/50 bg-green-500/5' : 'border-white/20 bg-black/20 hover:border-indigo-500/50'} rounded-2xl p-4 text-center transition-all`}>
         <input 
           type="file" 
-          accept=".pdf"
+          accept=".pdf,.jpg,.jpeg,.png"
           {...register(field)} 
           onChange={(e) => {
             register(field).onChange(e);
@@ -83,7 +83,7 @@ export default function Register() {
           {fileStates[field] ? (
             <><CheckCircle2 className="w-6 h-6 text-green-400 mb-1" /><span className="text-xs text-green-200 truncate w-full px-2">{fileStates[field]}</span></>
           ) : (
-            <><UploadCloud className="w-6 h-6 text-indigo-400 mb-1" /><span className="text-xs text-white/60">Upload PDF</span></>
+            <><UploadCloud className="w-6 h-6 text-indigo-400 mb-1" /><span className="text-xs text-white/60">Upload PDF/Image</span></>
           )}
         </div>
       </div>
@@ -102,9 +102,9 @@ export default function Register() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-3xl p-6 md:p-10">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
             
-            {/* Section A */}
+            {/* Personal Details */}
             <section>
-              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Section A – Personal Details</h3>
+              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Personal Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Full Name</label>
@@ -141,9 +141,9 @@ export default function Register() {
               </div>
             </section>
 
-            {/* Section B */}
+            {/* Educational Details */}
             <section>
-              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Section B – Educational Details (PDF)</h3>
+              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Educational Details</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <FileUpload field="sscCertificate" label="SSC Certificate" />
                 <FileUpload field="ugCertificate" label="UG Degree & Memo" />
@@ -152,9 +152,9 @@ export default function Register() {
               </div>
             </section>
 
-            {/* Section C */}
+            {/* Employment Details */}
             <section>
-              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Section C – Employment Details</h3>
+              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Employment Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Organization Name</label>
@@ -189,9 +189,9 @@ export default function Register() {
               </div>
             </section>
 
-            {/* Section D */}
+            {/* Research Proposal */}
             <section>
-              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Section D – Research Proposal</h3>
+              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Research Proposal</h3>
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-white/70 mb-2">Research Plan (Min 500 words)</label>
@@ -210,9 +210,9 @@ export default function Register() {
               </div>
             </section>
 
-            {/* Section E */}
+            {/* Fee Payment */}
             <section>
-              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Section E – Fee Payment</h3>
+              <h3 className="text-xl font-display text-indigo-300 border-b border-white/10 pb-2 mb-6">Fee Payment</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                   <h4 className="flex items-center text-indigo-300 font-bold mb-4">
@@ -230,7 +230,7 @@ export default function Register() {
                     </div>
                   </div>
                 </div>
-                <FileUpload field="feeReceipt" label="Upload Payment Receipt (PDF)" />
+                <FileUpload field="feeReceipt" label="Upload Payment Receipt" />
               </div>
             </section>
 

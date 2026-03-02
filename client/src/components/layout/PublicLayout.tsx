@@ -16,10 +16,15 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between h-20">
             {/* Logo Section */}
             <Link href="/" className="flex items-center space-x-3 group cursor-pointer">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
-                <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                  <GraduationCap className="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform duration-300" />
-                </div>
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
+                <img 
+                  src="https://alumni.jntugv.edu.in/alumni_portal/images/logo.png" 
+                  alt="JNTUGV Logo"
+                  className="w-full h-full object-contain bg-white p-1 group-hover:scale-110 transition-transform duration-300"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://ui-avatars.com/api/?name=JNTU&background=6366f1&color=fff";
+                  }}
+                />
               </div>
               <div className="hidden sm:block">
                 <h1 className="font-display font-bold text-lg leading-tight text-white group-hover:text-indigo-200 transition-colors">
