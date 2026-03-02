@@ -14,26 +14,34 @@ import ExcelJS from "exceljs";
 const JWT_SECRET = process.env.SESSION_SECRET || "supersecretjwtkey";
 
 // Ensure directories exist
-const uploadsRegistrationDir = path.join(process.cwd(), "uploads", "registration");
-const uploadsReceiptsDir = path.join(process.cwd(), "uploads", "receipts");
-const exportsDir = path.join(process.cwd(), "exports");
+const uploadsDir = path.join(process.cwd(), "uploads");
+const subdirs = ["ssc", "ug", "pg", "transfer", "noc", "agreement", "receipts"];
 
-[uploadsRegistrationDir, uploadsReceiptsDir, exportsDir].forEach(dir => {
+subdirs.forEach(sub => {
+  const dir = path.join(uploadsDir, sub);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
+const exportsDir = path.join(process.cwd(), "exports");
+if (!fs.existsSync(exportsDir)) {
+  fs.mkdirSync(exportsDir, { recursive: true });
+}
 
 // Configure Multer
 const storageConfig = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (file.fieldname === "registrationDetails") {
-      cb(null, uploadsRegistrationDir);
-    } else if (file.fieldname === "feeReceipt") {
-      cb(null, uploadsReceiptsDir);
-    } else {
-      cb(null, uploadsRegistrationDir);
-    }
+    const fieldToDir: Record<string, string> = {
+      sscCertificate: "ssc",
+      ugCertificate: "ug",
+      pgCertificate: "pg",
+      transferCertificate: "transfer",
+      nocCertificate: "noc",
+      collaborationAgreement: "agreement",
+      feeReceipt: "receipts"
+    };
+    const sub = fieldToDir[file.fieldname] || "misc";
+    cb(null, path.join(uploadsDir, sub));
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -107,41 +115,58 @@ export async function registerRoutes(
 
   // User registration
   app.post(api.users.register.path, upload.fields([
-    { name: 'registrationDetails', maxCount: 1 },
+    { name: 'sscCertificate', maxCount: 1 },
+    { name: 'ugCertificate', maxCount: 1 },
+    { name: 'pgCertificate', maxCount: 1 },
+    { name: 'transferCertificate', maxCount: 1 },
+    { name: 'nocCertificate', maxCount: 1 },
+    { name: 'collaborationAgreement', maxCount: 1 },
     { name: 'feeReceipt', maxCount: 1 }
   ]), async (req, res) => {
     try {
-      // req.body contains text fields
-      const { name, email, password, phone, organization, experience } = req.body;
+      const body = req.body;
       
-      if (!name || !email || !password) {
+      if (!body.name || !body.email || !body.password) {
         res.status(400).json({ message: "Name, email, and password are required" });
         return;
       }
 
-      const existingUser = await storage.getUserByEmail(email);
+      const existingUser = await storage.getUserByEmail(body.email);
       if (existingUser) {
         res.status(409).json({ message: "Email already exists" });
         return;
       }
 
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      const registrationDetailsFile = files?.['registrationDetails']?.[0];
-      const feeReceiptFile = files?.['feeReceipt']?.[0];
+      const getFilePath = (field: string) => {
+        const file = files?.[field]?.[0];
+        if (!file) return null;
+        const subdirs: Record<string, string> = {
+          sscCertificate: "ssc",
+          ugCertificate: "ug",
+          pgCertificate: "pg",
+          transferCertificate: "transfer",
+          nocCertificate: "noc",
+          collaborationAgreement: "agreement",
+          feeReceipt: "receipts"
+        };
+        return `/uploads/${subdirs[field]}/${file.filename}`;
+      };
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const exp = experience ? parseInt(experience) : null;
+      const hashedPassword = await bcrypt.hash(body.password, 10);
 
       const newUser = await storage.createUser({
-        name,
-        email,
+        ...body,
         password: hashedPassword,
-        phone: phone || null,
-        organization: organization || null,
-        experience: isNaN(exp as number) ? null : exp,
-        registrationDetailsPath: registrationDetailsFile ? `/uploads/registration/${registrationDetailsFile.filename}` : null,
-        feeReceiptPath: feeReceiptFile ? `/uploads/receipts/${feeReceiptFile.filename}` : null,
+        experience: body.experience ? parseInt(body.experience) : null,
+        numEmployeesTech: body.numEmployeesTech ? parseInt(body.numEmployeesTech) : null,
+        sscCertificatePath: getFilePath('sscCertificate'),
+        ugCertificatePath: getFilePath('ugCertificate'),
+        pgCertificatePath: getFilePath('pgCertificate'),
+        transferCertificatePath: getFilePath('transferCertificate'),
+        nocCertificatePath: getFilePath('nocCertificate'),
+        collaborationAgreementPath: getFilePath('collaborationAgreement'),
+        feeReceiptPath: getFilePath('feeReceipt'),
       });
 
       res.status(201).json({ message: "Registered successfully" });

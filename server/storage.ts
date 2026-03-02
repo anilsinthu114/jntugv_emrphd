@@ -4,7 +4,16 @@ import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { registrationDetailsPath: string | null; feeReceiptPath: string | null; password: string }): Promise<User>;
+  createUser(user: InsertUser & { 
+    password: string;
+    sscCertificatePath?: string | null;
+    ugCertificatePath?: string | null;
+    pgCertificatePath?: string | null;
+    transferCertificatePath?: string | null;
+    nocCertificatePath?: string | null;
+    collaborationAgreementPath?: string | null;
+    feeReceiptPath?: string | null;
+  }): Promise<User>;
   getUsers(): Promise<User[]>;
   getAdminByUsername(username: string): Promise<Admin | undefined>;
   createAdmin(admin: InsertAdmin): Promise<Admin>;
@@ -16,7 +25,16 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: InsertUser & { registrationDetailsPath: string | null; feeReceiptPath: string | null; password: string }): Promise<User> {
+  async createUser(user: InsertUser & { 
+    password: string;
+    sscCertificatePath?: string | null;
+    ugCertificatePath?: string | null;
+    pgCertificatePath?: string | null;
+    transferCertificatePath?: string | null;
+    nocCertificatePath?: string | null;
+    collaborationAgreementPath?: string | null;
+    feeReceiptPath?: string | null;
+  }): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
