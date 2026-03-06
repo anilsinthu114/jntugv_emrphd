@@ -1,8 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-
 // Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem("adminToken");
@@ -11,7 +9,6 @@ const getAuthHeaders = () => {
 
 export function useRegister() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   return useMutation({
     mutationFn: async (formData: FormData) => {
@@ -39,7 +36,7 @@ export function useRegister() {
         title: "Registration Successful",
         description: "Your Ph.D EMR application has been submitted.",
       });
-      setLocation("/");
+      // Removing automatic redirect to root "/" to let the component render a success state instead.
     },
     onError: (error: Error) => {
       toast({
@@ -58,13 +55,13 @@ export function useUsers() {
       const res = await fetch(api.users.list.path, {
         headers: getAuthHeaders(),
       });
-      
+
       if (res.status === 401) {
         throw new Error("Unauthorized");
       }
-      
+
       if (!res.ok) throw new Error("Failed to fetch users");
-      
+
       const data = await res.json();
       return api.users.list.responses[200].parse(data);
     },

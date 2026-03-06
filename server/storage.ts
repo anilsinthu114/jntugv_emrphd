@@ -4,15 +4,21 @@ import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { 
+  getUserByAadhaar(aadhaar: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
+  createUser(user: InsertUser & {
     password: string;
+    // All file paths
     sscCertificatePath?: string | null;
+    interCertificatePath?: string | null;
     ugCertificatePath?: string | null;
     pgCertificatePath?: string | null;
-    transferCertificatePath?: string | null;
+    transferCertificatePath?: string | null
     nocCertificatePath?: string | null;
-    collaborationAgreementPath?: string | null;
     feeReceiptPath?: string | null;
+    casteCertificatePath?: string | null;
+    // Employment details as JSON
+    employmentDetails?: any;
   }): Promise<User>;
   getUsers(): Promise<User[]>;
   getAdminByUsername(username: string): Promise<Admin | undefined>;
@@ -25,15 +31,27 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: InsertUser & { 
+  async getUserByAadhaar(aadhaar: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.aadhaarNumber, aadhaar));
+    return user;
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phone, phone));
+    return user;
+  }
+
+  async createUser(user: InsertUser & {
     password: string;
     sscCertificatePath?: string | null;
+    interCertificatePath?: string | null;
     ugCertificatePath?: string | null;
     pgCertificatePath?: string | null;
     transferCertificatePath?: string | null;
     nocCertificatePath?: string | null;
-    collaborationAgreementPath?: string | null;
     feeReceiptPath?: string | null;
+    casteCertificatePath?: string | null;
+    employmentDetails?: any;
   }): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;

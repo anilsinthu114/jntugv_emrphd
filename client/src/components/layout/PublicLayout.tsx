@@ -18,12 +18,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <Link href="/" className="flex items-center space-x-3 group cursor-pointer">
               <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
                 <img 
-                  src="https://alumni.jntugv.edu.in/alumni_portal/images/logo.png" 
+                  src="https://jntugv.edu.in/static/media/jntugvcev.b33bb43b07b2037ab043.jpg" 
                   alt="JNTUGV Logo"
                   className="w-full h-full object-contain bg-white p-1 group-hover:scale-110 transition-transform duration-300"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://ui-avatars.com/api/?name=JNTU&background=6366f1&color=fff";
-                  }}
+
                 />
               </div>
               <div className="hidden sm:block">
