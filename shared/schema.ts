@@ -86,15 +86,6 @@ export const admins = pgTable("admins", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
-  // File paths are handled separately
-  sscCertificatePath: true,
-  interCertificatePath: true,
-  ugCertificatePath: true,
-  pgCertificatePath: true,
-  transferCertificatePath: true,
-  nocCertificatePath: true,
-  feeReceiptPath: true,
-  casteCertificatePath: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

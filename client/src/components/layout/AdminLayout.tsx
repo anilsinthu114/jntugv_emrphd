@@ -73,50 +73,12 @@ async function uploadFileToFolder(fileName: string, fileBlob: Blob, folderId: st
 export function AdminLayout({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
   const logout = useAdminLogout();
-  const [users, setUsers] = useState([
-    { name: "John Doe", regId: "12345", fee: 5000 },
-    { name: "Jane Smith", regId: "12346", fee: 4500 },
-  ]);
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     if (!token) setLocation("/admin/login");
     initGoogleDrive();
   }, [setLocation]);
-
-  // Upload individual receipt PDF
-  const handleUploadReceipt = async (user: { name: string; regId: string; fee: number }) => {
-    try {
-      const folderId = await createFolder("users");
-      const fileContent = `Name: ${user.name}\nRegistration ID: ${user.regId}\nFee Paid: ₹${user.fee}`;
-      const fileBlob = new Blob([fileContent], { type: "application/pdf" });
-      const fileId = await uploadFileToFolder(`Receipt_${user.regId}.pdf`, fileBlob, folderId);
-      alert(`Receipt uploaded! File ID: ${fileId}`);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to upload receipt!");
-    }
-  };
-
-  // Export all users to Excel and upload to Drive
-  const handleExportExcel = async () => {
-  try {
-    const folderId = await createFolder("users");
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(users);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-
-    // Corrected way to create Blob
-    const excelArrayBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const excelBlob = new Blob([excelArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-
-    const fileId = await uploadFileToFolder("Users_Data.xlsx", excelBlob, folderId);
-    alert(`Excel uploaded to Drive! File ID: ${fileId}`);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to upload Excel!");
-  }
-};
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col md:flex-row">
@@ -163,44 +125,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-x-hidden overflow-y-auto">
         <div className="p-6 md:p-10 max-w-7xl mx-auto">
           {children}
-
-          {/* Users Table */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">Users</h3>
-            <button
-              onClick={handleExportExcel}
-              className="mb-4 px-4 py-2 bg-green-500 rounded hover:bg-green-600"
-            >
-              Export Excel to Drive
-            </button>
-            <table className="w-full text-left border-collapse border border-white/10">
-              <thead>
-                <tr className="bg-white/5">
-                  <th className="p-2 border border-white/10">Name</th>
-                  <th className="p-2 border border-white/10">Reg ID</th>
-                  <th className="p-2 border border-white/10">Fee Paid</th>
-                  <th className="p-2 border border-white/10">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.regId} className="hover:bg-white/10">
-                    <td className="p-2 border border-white/10">{user.name}</td>
-                    <td className="p-2 border border-white/10">{user.regId}</td>
-                    <td className="p-2 border border-white/10">₹{user.fee}</td>
-                    <td className="p-2 border border-white/10">
-                      <button
-                        onClick={() => handleUploadReceipt(user)}
-                        className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-                      >
-                        Upload Receipt to Drive
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </main>
     </div>

@@ -6,20 +6,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByAadhaar(aadhaar: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
-  createUser(user: {
-    // All file paths
-    sscCertificatePath?: string | null;
-
-    interCertificatePath?: string | null;
-    ugCertificatePath?: string | null;
-    pgCertificatePath?: string | null;
-    transferCertificatePath?: string | null
-    nocCertificatePath?: string | null;
-    feeReceiptPath?: string | null;
-    casteCertificatePath?: string | null;
-    // Employment details as JSON
-    employmentDetails?: any;
-  }): Promise<User>;
+  createUser(user: Omit<InsertUser, "employmentDetails"> & { employmentDetails: any }): Promise<User>;
   getUsers(): Promise<User[]>;
   getAdminByUsername(username: string): Promise<Admin | undefined>;
   createAdmin(admin: InsertAdmin): Promise<Admin>;
@@ -41,17 +28,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: {
-    sscCertificatePath?: string | null;
-    interCertificatePath?: string | null;
-    ugCertificatePath?: string | null;
-    pgCertificatePath?: string | null;
-    transferCertificatePath?: string | null;
-    nocCertificatePath?: string | null;
-    feeReceiptPath?: string | null;
-    casteCertificatePath?: string | null;
-    employmentDetails?: any;
-  }): Promise<User> {
+  async createUser(user: Omit<InsertUser, "employmentDetails"> & { employmentDetails: any }): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }

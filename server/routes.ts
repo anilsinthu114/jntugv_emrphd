@@ -10,12 +10,13 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import express from "express";
 import ExcelJS from "exceljs";
+import { uploadFileToDrive } from "./drive";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "supersecretjwtkey";
 
 // Ensure directories exist
 const uploadsDir = path.join(process.cwd(), "uploads");
-const subdirs = ["ssc", "inter", "ug", "pg", "transfer", "noc", "agreement", "receipts", "caste", "employment"];
+const subdirs = ["ssc", "inter", "ug", "pg", "transfer", "noc", "agreement", "receipts", "caste", "employment", "misc"];
 
 subdirs.forEach(sub => {
   const dir = path.join(uploadsDir, sub);
@@ -68,7 +69,6 @@ const upload = multer({
     }
   }
 });
-
 // Middleware for JWT auth
 function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
@@ -159,23 +159,36 @@ export async function registerRoutes(
         return;
       }
 
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | Express.Multer.File[];
+      
+      // We will upload all provided files to Drive concurrently
+      const uploadedLinks = new Map<string, string>();
+      
+      let filesToUpload: { field: string, file: Express.Multer.File }[] = [];
+      if (Array.isArray(files)) {
+        filesToUpload = files.map(file => ({ field: file.fieldname, file }));
+      } else if (files) {
+        Object.entries(files).forEach(([field, fileArray]) => {
+          if (fileArray && fileArray.length > 0) {
+            filesToUpload.push({ field, file: fileArray[0] });
+          }
+        });
+      }
+
+      // Upload to Drive and store resulting links mapping
+      await Promise.all(
+          filesToUpload.map(async ({ field, file }) => {
+              try {
+                  const link = await uploadFileToDrive(file);
+                  uploadedLinks.set(field, link);
+              } catch (e) {
+                  console.error(`Failed to upload file ${field} to Drive:`, e);
+              }
+          })
+      );
+
       const getFilePath = (field: string) => {
-        const file = files?.[field]?.[0];
-        if (!file) return null;
-        const subdirs: Record<string, string> = {
-          sscCertificate: "ssc",
-          interCertificate: "inter",
-          ugCertificate: "ug",
-          pgCertificate: "pg",
-          transferCertificate: "transfer",
-          nocCertificate: "noc",
-          collaborationAgreement: "agreement",
-          feeReceipt: "receipts",
-          casteCertificate: "caste",
-          nocCurrentOrganization: "noc",
-        };
-        return `/uploads/${subdirs[field]}/${file.filename}`;
+        return uploadedLinks.get(field) || null;
       };
 
       // Parse employment details if provided
@@ -188,9 +201,9 @@ export async function registerRoutes(
 
           employmentDetails = employmentDetails.map((emp: any, index: number) => {
             const fieldName = `employmentDetails.${index}.certificate`;
-            const file = files?.[fieldName]?.[0];
-            if (file) {
-              return { ...emp, certificate: `/uploads/employment/${file.filename}` };
+            const uploadedLink = uploadedLinks.get(fieldName);
+            if (uploadedLink) {
+              return { ...emp, certificate: uploadedLink };
             }
             return emp;
           });
@@ -286,6 +299,26 @@ export async function registerRoutes(
 
       const baseUrl = `${req.protocol}://${req.get('host')}`;
 
+      let maxEmploymentEntries = 0;
+      users.forEach(user => {
+        if (user.employmentDetails && Array.isArray(user.employmentDetails)) {
+          maxEmploymentEntries = Math.max(maxEmploymentEntries, user.employmentDetails.length);
+        }
+      });
+
+      const employmentColumns = [];
+      for (let i = 0; i < maxEmploymentEntries; i++) {
+        employmentColumns.push(
+          { header: `Emp Org_${i+1}`, key: `emp_org_${i+1}`, width: 20 },
+          { header: `Emp Type_${i+1}`, key: `emp_type_${i+1}`, width: 15 },
+          { header: `Emp Desig_${i+1}`, key: `emp_desig_${i+1}`, width: 20 },
+          { header: `Emp Yrs_${i+1}`, key: `emp_yrs_${i+1}`, width: 10 },
+          { header: `Emp From_${i+1}`, key: `emp_from_${i+1}`, width: 15 },
+          { header: `Emp To_${i+1}`, key: `emp_to_${i+1}`, width: 15 },
+          { header: `Emp Cert_${i+1}`, key: `emp_cert_${i+1}`, width: 40 }
+        );
+      }
+
       // Define all columns
       worksheet.columns = [
         // Personal Details
@@ -329,7 +362,7 @@ export async function registerRoutes(
         { header: 'PG Certificate', key: 'pgCertificatePath', width: 40 },
 
         // Employment Details
-        { header: 'Employment Details', key: 'employmentDetails', width: 60 },
+        ...employmentColumns,
 
         // Annual Turnover (Optional)
         { header: 'Turnover 23-24', key: 'annualTurnover2324', width: 15 },
@@ -360,15 +393,7 @@ export async function registerRoutes(
       };
 
       users.forEach((user, index) => {
-        // Format employment details as readable string
-        let employmentStr = '';
-        if (user.employmentDetails && Array.isArray(user.employmentDetails)) {
-          employmentStr = user.employmentDetails.map((emp: any, idx: number) =>
-            `Emp${idx + 1}: ${emp.organizationName || ''} (${emp.organizationType || ''}), ${emp.designation || ''}, ${emp.yearsOfExperience || 0} yrs`
-          ).join(' | ');
-        }
-
-        const row = {
+        const row: any = {
           serialNo: index + 1,
           name: user.name || '',
           email: user.email || '',
@@ -382,7 +407,7 @@ export async function registerRoutes(
           sscInstitute: user.sscInstitute || '',
           sscPassedYear: user.sscPassedYear || '',
           sscPercentage: user.sscPercentage || '',
-          sscCertificatePath: user.sscCertificatePath ? `${baseUrl}${user.sscCertificatePath}` : '',
+          sscCertificatePath: user.sscCertificatePath || '',
 
           // Inter
           interQualification: user.interQualification || '',
@@ -390,7 +415,7 @@ export async function registerRoutes(
           interInstitute: user.interInstitute || '',
           interPassedYear: user.interPassedYear || '',
           interPercentage: user.interPercentage || '',
-          interCertificatePath: user.interCertificatePath ? `${baseUrl}${user.interCertificatePath}` : '',
+          interCertificatePath: user.interCertificatePath || '',
 
           // UG
           ugQualification: user.ugQualification || '',
@@ -398,7 +423,7 @@ export async function registerRoutes(
           ugInstitute: user.ugInstitute || '',
           ugPassedYear: user.ugPassedYear || '',
           ugCgpa: user.ugCgpa || '',
-          ugCertificatePath: user.ugCertificatePath ? `${baseUrl}${user.ugCertificatePath}` : '',
+          ugCertificatePath: user.ugCertificatePath || '',
 
           // PG
           pgQualification: user.pgQualification || '',
@@ -406,10 +431,7 @@ export async function registerRoutes(
           pgInstitute: user.pgInstitute || '',
           pgPassedYear: user.pgPassedYear || '',
           pgCgpa: user.pgCgpa || '',
-          pgCertificatePath: user.pgCertificatePath ? `${baseUrl}${user.pgCertificatePath}` : '',
-
-          // Employment
-          employmentDetails: employmentStr,
+          pgCertificatePath: user.pgCertificatePath || '',
 
           // Annual Turnover
           annualTurnover2324: user.annualTurnover2324 || '',
@@ -422,14 +444,26 @@ export async function registerRoutes(
           researchFacilities: user.researchFacilities || '',
 
           // Files
-          transferCertificatePath: user.transferCertificatePath ? `${baseUrl}${user.transferCertificatePath}` : '',
-          nocCertificatePath: user.nocCertificatePath ? `${baseUrl}${user.nocCertificatePath}` : '',
-          feeReceiptPath: user.feeReceiptPath ? `${baseUrl}${user.feeReceiptPath}` : '',
-          casteCertificatePath: user.casteCertificatePath ? `${baseUrl}${user.casteCertificatePath}` : '',
+          transferCertificatePath: user.transferCertificatePath || '',
+          nocCertificatePath: user.nocCertificatePath || '',
+          feeReceiptPath: user.feeReceiptPath || '',
+          casteCertificatePath: user.casteCertificatePath || '',
 
           // Meta
           createdAt: user.createdAt?.toISOString() || ''
         };
+
+        if (user.employmentDetails && Array.isArray(user.employmentDetails)) {
+          user.employmentDetails.forEach((emp: any, idx: number) => {
+            row[`emp_org_${idx+1}`] = emp.organizationName || '';
+            row[`emp_type_${idx+1}`] = emp.organizationType || '';
+            row[`emp_desig_${idx+1}`] = emp.designation || '';
+            row[`emp_yrs_${idx+1}`] = emp.yearsOfExperience || 0;
+            row[`emp_from_${idx+1}`] = emp.experienceFrom || '';
+            row[`emp_to_${idx+1}`] = emp.experienceTo || '';
+            row[`emp_cert_${idx+1}`] = emp.certificate || '';
+          });
+        }
 
         worksheet.addRow(row);
       });
