@@ -25,7 +25,6 @@ const registerFormSchema = z.object({
   // Personal Details
   name: z.string().min(2, "Full name is required").max(100),
   email: z.string().email("Valid email is required").max(150),
-  password: z.string().min(6, "Password must be at least 6 characters"),
   aadhaarNumber: z.string().length(12, "Aadhaar must be 12 digits"),
   category: z.enum(["OC", "BC-A", "BC-B", "BC-C", "BC-D", "SC", "ST"]),
   phone: z.string().min(10, "Valid phone number required").max(20),

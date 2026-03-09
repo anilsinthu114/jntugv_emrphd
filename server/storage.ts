@@ -6,10 +6,10 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByAadhaar(aadhaar: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
-  createUser(user: InsertUser & {
-    password: string;
+  createUser(user: {
     // All file paths
     sscCertificatePath?: string | null;
+
     interCertificatePath?: string | null;
     ugCertificatePath?: string | null;
     pgCertificatePath?: string | null;
@@ -41,8 +41,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: InsertUser & {
-    password: string;
+  async createUser(user: {
     sscCertificatePath?: string | null;
     interCertificatePath?: string | null;
     ugCertificatePath?: string | null;
@@ -66,10 +65,11 @@ export class DatabaseStorage implements IStorage {
     return admin;
   }
 
-  async createAdmin(admin: InsertAdmin): Promise<Admin> {
+async createAdmin(admin: InsertAdmin): Promise<Admin> {
     const [newAdmin] = await db.insert(admins).values(admin).returning();
     return newAdmin;
   }
 }
 
 export const storage = new DatabaseStorage();
+

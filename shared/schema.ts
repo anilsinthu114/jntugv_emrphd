@@ -16,10 +16,9 @@ export const employmentEntrySchema = z.object({
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
 
-  // Personal Details *
+// Personal Details *
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 150 }).notNull().unique(),
-  password: text("password").notNull(),
   aadhaarNumber: varchar("aadhaar_number", { length: 12 }).notNull(),
   category: varchar("category", { length: 20 }).notNull(), // BC/SC/ST/OC
   phone: varchar("phone", { length: 20 }).notNull(),

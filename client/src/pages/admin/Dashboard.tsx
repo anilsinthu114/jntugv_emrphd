@@ -1,12 +1,37 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useUsers, useExportUsers } from "@/hooks/use-users";
-import { Users as UsersIcon, Download, FileText, Loader2, Building2, Briefcase, Phone, Mail, Calendar } from "lucide-react";
+import { Users as UsersIcon, Download, FileText, Loader2, GraduationCap, Phone, Mail, Calendar, Award } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const { data: users, isLoading, isError } = useUsers();
   const { mutate: exportUsers, isPending: isExporting } = useExportUsers();
+
+  // Get first employment details for display
+  const getFirstEmployment = (user: any) => {
+    if (user.employmentDetails && Array.isArray(user.employmentDetails) && user.employmentDetails.length > 0) {
+      const emp = user.employmentDetails[0];
+      return `${emp.designation || 'N/A'} at ${emp.organizationName || 'N/A'}`;
+    }
+    return 'Not provided';
+  };
+
+  // Get total years of experience
+  const getTotalExperience = (user: any) => {
+    if (user.employmentDetails && Array.isArray(user.employmentDetails)) {
+      const total = user.employmentDetails.reduce((sum: number, emp: any) => {
+        return sum + (parseFloat(emp.yearsOfExperience) || 0);
+      }, 0);
+      return total > 0 ? `${total} Years` : 'Not provided';
+    }
+    return 'Not provided';
+  };
+
+  // Get UG qualification for display
+  const getQualification = (user: any) => {
+    return user.ugQualification || 'Not provided';
+  };
 
   return (
     <AdminLayout>
@@ -50,7 +75,9 @@ export default function Dashboard() {
               <tr>
                 <th className="px-6 py-4">Applicant</th>
                 <th className="px-6 py-4">Contact Info</th>
-                <th className="px-6 py-4">Professional</th>
+                <th className="px-6 py-4">Qualification</th>
+                <th className="px-6 py-4">Employment</th>
+                <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4">Documents</th>
                 <th className="px-6 py-4">Applied On</th>
               </tr>
@@ -58,7 +85,7 @@ export default function Dashboard() {
             <tbody className="divide-y divide-white/5">
               {isLoading && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/50">
+                  <td colSpan={7} className="px-6 py-12 text-center text-white/50">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
                     Loading applicants...
                   </td>
@@ -66,14 +93,14 @@ export default function Dashboard() {
               )}
               {isError && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-red-400">
+                  <td colSpan={7} className="px-6 py-12 text-center text-red-400">
                     Failed to load data. Please refresh the page.
                   </td>
                 </tr>
               )}
               {!isLoading && !isError && users?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-white/50">
+                  <td colSpan={7} className="px-6 py-12 text-center text-white/50">
                     No applicants found.
                   </td>
                 </tr>
@@ -89,56 +116,98 @@ export default function Dashboard() {
                   <td className="px-6 py-4">
                     <div className="font-semibold text-white">{user.name}</div>
                     <div className="text-xs text-white/40 mt-1">ID: #{user.id}</div>
+                    <div className="text-xs text-white/30 mt-1">Aadhaar: {user.aadhaarNumber || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 space-y-1 text-white/60">
                     <div className="flex items-center space-x-2">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate max-w-[150px]">{user.email}</span>
+                      <span className="truncate max-w-[180px]">{user.email}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Phone className="w-3.5 h-3.5 shrink-0" />
                       <span>{user.phone}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 space-y-1 text-white/60">
+                  <td className="px-6 py-4 text-white/60">
                     <div className="flex items-center space-x-2">
-                      <Building2 className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate max-w-[180px]">{user.organization}</span>
+                      <Award className="w-3.5 h-3.5 shrink-0" />
+                      <span>{getQualification(user)}</span>
                     </div>
+                    <div className="text-xs text-white/40 mt-1">
+                      {user.ugInstitute || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-white/60">
                     <div className="flex items-center space-x-2">
-                      <Briefcase className="w-3.5 h-3.5 shrink-0" />
-                      <span>{user.experience} Years</span>
+                      <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate max-w-[150px]">{getFirstEmployment(user)}</span>
+                    </div>
+                    <div className="text-xs text-white/40 mt-1">
+                      Exp: {getTotalExperience(user)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-col space-y-2">
-                      {user.feeReceiptPath ? (
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      user.category === 'OC' ? 'bg-green-500/20 text-green-400' :
+                      user.category === 'SC' ? 'bg-orange-500/20 text-orange-400' :
+                      user.category === 'ST' ? 'bg-red-500/20 text-red-400' :
+                      'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {user.category || 'N/A'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-2">
+                      {user.feeReceiptPath && (
                         <a 
                           href={user.feeReceiptPath} 
                           download 
                           target="_blank" 
                           rel="noreferrer"
-                          className="inline-flex items-center space-x-1.5 text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                          className="inline-flex items-center space-x-1 text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                          title="Fee Receipt"
                         >
                           <FileText className="w-3.5 h-3.5" />
-                          <span>Fee Receipt</span>
                         </a>
-                      ) : (
-                        <span className="text-xs text-white/30">No Receipt</span>
                       )}
-                      {user.registrationDetailsPath ? (
+                      {user.transferCertificatePath && (
                         <a 
-                          href={user.registrationDetailsPath} 
+                          href={user.transferCertificatePath} 
                           download 
                           target="_blank" 
                           rel="noreferrer"
-                          className="inline-flex items-center space-x-1.5 text-xs font-medium text-purple-400 hover:text-purple-300"
+                          className="inline-flex items-center space-x-1 text-xs font-medium text-purple-400 hover:text-purple-300"
+                          title="Transfer Certificate"
                         >
                           <FileText className="w-3.5 h-3.5" />
-                          <span>Reg. Details</span>
                         </a>
-                      ) : (
-                        <span className="text-xs text-white/30">No Details</span>
+                      )}
+                      {user.casteCertificatePath && (
+                        <a 
+                          href={user.casteCertificatePath} 
+                          download 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center space-x-1 text-xs font-medium text-orange-400 hover:text-orange-300"
+                          title="Caste Certificate"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {user.nocCertificatePath && (
+                        <a 
+                          href={user.nocCertificatePath} 
+                          download 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center space-x-1 text-xs font-medium text-cyan-400 hover:text-cyan-300"
+                          title="NOC Certificate"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      {!user.feeReceiptPath && !user.transferCertificatePath && !user.casteCertificatePath && !user.nocCertificatePath && (
+                        <span className="text-xs text-white/30">No documents</span>
                       )}
                     </div>
                   </td>
@@ -157,3 +226,4 @@ export default function Dashboard() {
     </AdminLayout>
   );
 }
+

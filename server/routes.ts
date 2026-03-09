@@ -136,8 +136,8 @@ export async function registerRoutes(
     try {
       const body = req.body;
 
-      if (!body.name || !body.email || !body.password) {
-        res.status(400).json({ message: "Name, email, and password are required" });
+      if (!body.name || !body.email) {
+        res.status(400).json({ message: "Name and email are required" });
         return;
       }
 
@@ -178,8 +178,6 @@ export async function registerRoutes(
         return `/uploads/${subdirs[field]}/${file.filename}`;
       };
 
-      const hashedPassword = await bcrypt.hash(body.password, 10);
-
       // Parse employment details if provided
       let employmentDetails = [];
       if (body.employmentDetails) {
@@ -205,7 +203,6 @@ export async function registerRoutes(
         // Personal Details
         name: body.name,
         email: body.email,
-        password: hashedPassword,
         aadhaarNumber: body.aadhaarNumber,
         category: body.category,
         phone: body.phone,
@@ -273,11 +270,7 @@ export async function registerRoutes(
   app.get(api.users.list.path, authenticateToken, async (req, res) => {
     try {
       const users = await storage.getUsers();
-      const safeUsers = users.map(u => {
-        const { password, ...rest } = u;
-        return rest;
-      });
-      res.json(safeUsers);
+      res.json(users);
     } catch (err) {
       res.status(500).json({ message: "Internal server error" });
     }
